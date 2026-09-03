@@ -1,0 +1,32 @@
+[
+    {
+        "id" : 1,
+        "question" : "who company made red dead redemption 2",
+        "target_section" : "top",
+        "expected_answer" : "Rockstar games"
+    },
+    {
+        "id" : 2,
+        "question" : "How many years did it take to develop the game",
+        "target_section" : "top",
+        "expected_answer" : "8 years"
+    },
+    {
+        "id" : 3,
+        "question" : "Which character you play as cannot swin in the game",
+        "target_section" : "gameplay",
+        "expected_answer" : "John Marston"
+    },
+    {
+        "id" : 4,
+        "question" : "Who composed the music for the game",
+        "target_section" : "Development",
+        "expected_answer" : "Woody Jackson"
+    },
+    {
+        "id" : 5,
+        "question" : "What did the critics say about the game",
+        "target_section" : "Reception",
+        "expected_answer" : "Several critics considered Red Dead Redemption 2's open world among the greatest in video games"
+    }
+]
