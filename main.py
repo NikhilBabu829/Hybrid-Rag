@@ -27,13 +27,21 @@ embed_model = SentenceTransformer("BAAI/bge-base-en-v1.5")
 
 def sending_to_ai(results, user_query):
     api_key = os.getenv("API_KEY")
+    
+    formatted_chunks = []
+    for idx, doc in enumerate(results, start=1):
+        content = doc.get("text", "").strip()
+        formatted_chunks.append(f"[{idx}] {content}")
+    context_str = "\n\n".join(formatted_chunks)
 
-    system_prompt = f"""
-        <task>Your job is to answer the question given to you based on the data we have at hand, and include citations saying from where in the data your got your answer</task>
-        <Context>
-            {results}
-        </Context>
-    """
+    system_prompt = f"""You are a helpful assistant answering questions using only the provided context.
+    Context:
+    {context_str}
+    Instructions:
+    - Answer the question accurately using solely the information in the context above.
+    - Cite your sources using the bracketed notation [n] matching the chunk indices (e.g., [1], [2]).
+    - Place the citations immediately after the facts or sentences they support.
+    - If the context does not contain enough information to answer, state that clearly."""
 
     headers = {
         "x-api-key": api_key,
@@ -47,6 +55,7 @@ def sending_to_ai(results, user_query):
         "system": system_prompt,
         "messages": [{"role": "user", "content": user_query}]
     }
+
     try:
         with httpx.Client() as client:
             response = client.post("https://api.anthropic.com/v1/messages", headers=headers, json=payload)
@@ -59,11 +68,11 @@ def sending_to_ai(results, user_query):
     except Exception as e:
         con.print(f"[red]API Error:[/red] {e}")
 
-def continue_with_user_query(user_query : str):
+def continue_with_user_query(user_query : str, rrf, top_k):
     con.log("Embedding user query")
     embeded_query = embed_model.encode_query(user_query, normalize_embeddings=True, show_progress_bar=True).tolist()
     con.log("now sending a request to get the appropriate documents")
-    results = getting_data_from_db(embeded_query=embeded_query, text_query = user_query)
+    results = getting_data_from_db(embeded_query=embeded_query, text_query = user_query, rrf = rrf, top_k= top_k)
     return results
     con.log("retrieved results, now sending them to ai")
     # sending_to_ai(results, user_query)
@@ -98,7 +107,7 @@ def reciprocal_rank_fusion(bm25_results, vector_results, k=60):
 
     return final_ranked
 
-def getting_data_from_db(embeded_query, text_query):
+def getting_data_from_db(embeded_query, text_query, rrf, top_k):
     database = client.get_database("regularData")
     collection = database.get_collection("chunks")
     vector_pipeline = [
@@ -145,17 +154,17 @@ def getting_data_from_db(embeded_query, text_query):
     embedding_results = collection.aggregate(vector_pipeline).to_list()
     keyword_results = collection.aggregate(keyword_pipeline).to_list()
 
-    merged_results = reciprocal_rank_fusion(keyword_results, embedding_results, k=60)
+    merged_results = reciprocal_rank_fusion(keyword_results, embedding_results, k=rrf)
 
-    return merged_results[:5]
+    return merged_results[:top_k]
 
-def starter(query : str):
+def starter(query : str, rrf, top_k):
     startTime = time.perf_counter()
-    some_value = continue_with_user_query(user_query=query)
+    some_value = continue_with_user_query(user_query=query, rrf=rrf, top_k=top_k)
     aiResponse = sending_to_ai(some_value, user_query=query)
     endTime = time.perf_counter()
     elapsed_time = endTime - startTime
-    return Answer(answer=aiResponse, latency_ms=int(elapsed_time), chunks=some_value)
+    return Answer(answer=aiResponse, latency_ms=int(elapsed_time * 1000), chunks=some_value)
 
 def main():
     print("Hello from production-grade-rag!")

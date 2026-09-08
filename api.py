@@ -33,5 +33,5 @@ app.add_middleware(
 
 @app.post("/api/chat")
 async def main(query : Query):
-    returned_value = starter(query=query.query)
+    returned_value = starter(query=query.query, rrf=query.rrf_k,top_k=query.top_k)
     return returned_value
