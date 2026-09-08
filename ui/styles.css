@@ -110,10 +110,20 @@ svg {
 .app {
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--sources-w);
+  /* Grid rows are content-sized by default, so a long conversation would grow
+     the row past the viewport, push the composer off-screen, and leave the
+     inner panes unscrollable. minmax(0,1fr) pins the row to the viewport. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
 }
+
+/* Same reason, one level down: a grid/flex item's default `min-height: auto`
+   refuses to shrink below its content, which defeats `overflow-y: auto` on
+   the scroll containers inside. Every column and scroll pane needs this. */
+.sidebar, .chat, .sources,
+.messages, .sources-list { min-height: 0; }
 
 .icon-btn {
   display: inline-grid;

@@ -157,29 +157,38 @@ function withCitations(text) {
     .join("");
 }
 
+/* A chunk's score may arrive as `score` or as RRF's `rrf_score`; a chunk that
+   only ever surfaced through the keyword pipeline may carry neither. Missing
+   is rendered as "—" rather than crashing the whole panel. */
+function scoreOf(chunk) {
+  const raw = chunk.score ?? chunk.rrf_score;
+  return typeof raw === "number" && Number.isFinite(raw) ? raw : null;
+}
+
 function renderSources(chunks, meta) {
-  els.sourcesMeta.innerHTML = [meta.mode, `top ${chunks.length}`, `${meta.ms} ms`]
+  els.sourcesMeta.innerHTML = [meta.mode, `top ${chunks.length}`, `${meta.ms ?? "—"} ms`]
     .map((t) => `<span class="pill">${escapeHtml(String(t))}</span>`)
     .join("");
 
-  const max = Math.max(...chunks.map((c) => c.score), 0.0001);
+  const max = Math.max(...chunks.map((c) => scoreOf(c) ?? 0), 0.0001);
 
   els.sourcesList.innerHTML = chunks
-    .map(
-      (c, i) => `
+    .map((c, i) => {
+      const score = scoreOf(c);
+      return `
       <article class="source-card" data-rank="${i + 1}" style="animation-delay:${i * 40}ms">
         <div class="source-top">
           <span class="source-rank">${i + 1}</span>
-          <span class="source-id">chunk #${c.id}</span>
+          <span class="source-id">chunk #${escapeHtml(String(c.id ?? "?"))}</span>
           <span class="source-tag">${escapeHtml(c.source || meta.mode)}</span>
         </div>
-        <p class="source-text">${escapeHtml(c.text)}</p>
+        <p class="source-text">${escapeHtml(String(c.text ?? ""))}</p>
         <div class="source-score">
-          <span>${c.score.toFixed(4)}</span>
-          <span class="meter"><i style="width:${Math.round((c.score / max) * 100)}%"></i></span>
+          <span>${score === null ? "—" : score.toFixed(4)}</span>
+          <span class="meter"><i style="width:${score === null ? 0 : Math.round((score / max) * 100)}%"></i></span>
         </div>
-      </article>`
-    )
+      </article>`;
+    })
     .join("");
 
   els.sourcesList.querySelectorAll(".source-card").forEach((card) =>
@@ -223,19 +232,35 @@ async function ask(question) {
     rrf_k: Number(els.rrfK.value),
   };
 
+  let data;
   try {
-    const data = USE_MOCK ? await mockBackend(params) : await askBackend(params);
-    pending.querySelector(".msg-body").innerHTML = withCitations(data.answer);
-    addActions(pending);
-    renderSources(data.chunks, { mode: params.mode, ms: data.latency_ms });
+    data = USE_MOCK ? await mockBackend(params) : await askBackend(params);
   } catch (err) {
     pending.querySelector(".msg-body").innerHTML =
       `<p>Couldn't reach the backend — ${escapeHtml(err.message)}</p>`;
-  } finally {
     busy = false;
     autogrow();
-    els.messages.scrollTop = els.messages.scrollHeight;
+    return;
   }
+
+  try {
+    pending.querySelector(".msg-body").innerHTML = withCitations(data.answer ?? "");
+    addActions(pending);
+  } finally {
+    /* The sources panel is secondary — if it fails to render, keep the answer
+       on screen and report the failure in the panel, not over the answer. */
+    try {
+      renderSources(data.chunks ?? [], { mode: params.mode, ms: data.latency_ms });
+    } catch (err) {
+      console.error("renderSources failed", err, data);
+      els.sourcesList.innerHTML =
+        `<p class="sources-empty">Couldn't render the retrieved chunks — ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  busy = false;
+  autogrow();
+  els.messages.scrollTop = els.messages.scrollHeight;
 }
 
 /**
