@@ -6,8 +6,8 @@
    it. The expected response shape is documented on askBackend().
    ============================================================ */
 
-const USE_MOCK = true;
-const API_URL = "/api/chat";
+const USE_MOCK = false;
+const API_URL = "http://127.0.0.1:8000/api/chat";
 
 /* ── elements ─────────────────────────────────────────────── */
 const $ = (id) => document.getElementById(id);
