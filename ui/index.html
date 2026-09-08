@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Production-Grade RAG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Sidebar ───────────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">R</div>
+        <div class="brand-text">
+          <strong>Production RAG</strong>
+          <span>Red Dead Redemption 2</span>
+        </div>
+        <button class="icon-btn sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <button class="new-chat" id="newChat">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New conversation
+      </button>
+
+      <nav class="history" aria-label="Conversation history">
+        <p class="section-label">Recent</p>
+        <ul>
+          <li><button class="history-item is-active">Who is Arthur Morgan?</button></li>
+          <li><button class="history-item">Van der Linde gang members</button></li>
+          <li><button class="history-item">Development &amp; reception</button></li>
+          <li><button class="history-item">Setting of the game world</button></li>
+        </ul>
+      </nav>
+
+      <div class="settings">
+        <p class="section-label">Retrieval</p>
+
+        <div class="field">
+          <label for="mode">Search mode</label>
+          <select id="mode">
+            <option value="hybrid" selected>Hybrid (RRF)</option>
+            <option value="vector">Vector only</option>
+            <option value="keyword">Keyword only</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="topK">Top K <span class="value" id="topKValue">5</span></label>
+          <input type="range" id="topK" min="1" max="25" value="5" />
+        </div>
+
+        <div class="field">
+          <label for="rrfK">RRF constant <span class="value" id="rrfKValue">60</span></label>
+          <input type="range" id="rrfK" min="1" max="120" value="60" />
+        </div>
+
+        <label class="switch">
+          <input type="checkbox" id="showSources" checked />
+          <span class="track"><span class="thumb"></span></span>
+          <span>Show retrieved chunks</span>
+        </label>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="status"><span class="dot"></span> Index: 412 chunks · bge-base-en-v1.5</div>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── Main chat ─────────────────────────────────────────── -->
+    <main class="chat">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div class="topbar-title">
+          <h1>Ask the corpus</h1>
+          <p>Hybrid retrieval over the Red Dead Redemption 2 knowledge base</p>
+        </div>
+        <span class="badge">claude-haiku-4-5</span>
+      </header>
+
+      <div class="messages" id="messages">
+        <!-- Empty state -->
+        <section class="empty-state" id="emptyState">
+          <div class="empty-mark">R</div>
+          <h2>What do you want to know?</h2>
+          <p>Answers are grounded in retrieved passages. Every response cites the chunks it used.</p>
+          <div class="suggestions">
+            <button class="suggestion">Who is Arthur Morgan and what happens to him?</button>
+            <button class="suggestion">How was the game's open world developed?</button>
+            <button class="suggestion">What was the critical reception at launch?</button>
+            <button class="suggestion">Explain the honor system.</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="composer-wrap">
+        <form class="composer" id="composer">
+          <textarea id="input" rows="1" placeholder="Ask a question about Red Dead Redemption 2…" autocomplete="off"></textarea>
+          <div class="composer-actions">
+            <span class="hint"><kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for newline</span>
+            <button type="submit" class="send" id="send" aria-label="Send">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 8 6 8-16-8z"/></svg>
+            </button>
+          </div>
+        </form>
+        <p class="disclaimer">Retrieval-augmented. Responses may still contain errors — check the sources.</p>
+      </div>
+    </main>
+
+    <!-- ── Sources panel ─────────────────────────────────────── -->
+    <aside class="sources" id="sources">
+      <header class="sources-head">
+        <h2>Retrieved chunks</h2>
+        <button class="icon-btn sources-close" id="sourcesClose" aria-label="Close sources">&times;</button>
+      </header>
+      <div class="sources-meta" id="sourcesMeta">
+        <span class="pill">hybrid</span>
+        <span class="pill">top 5</span>
+        <span class="pill">— ms</span>
+      </div>
+      <div class="sources-list" id="sourcesList">
+        <p class="sources-empty">Ask a question to see which passages were retrieved, how they ranked, and their fusion scores.</p>
+      </div>
+    </aside>
+
+    <div class="scrim" id="scrim" hidden></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
