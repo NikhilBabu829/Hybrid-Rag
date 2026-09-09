@@ -27,7 +27,7 @@ embed_model = SentenceTransformer("BAAI/bge-base-en-v1.5")
 
 def sending_to_ai(results, user_query):
     api_key = os.getenv("API_KEY")
-    
+
     formatted_chunks = []
     for idx, doc in enumerate(results, start=1):
         content = doc.get("text", "").strip()
@@ -74,8 +74,6 @@ def continue_with_user_query(user_query : str, rrf, top_k):
     con.log("now sending a request to get the appropriate documents")
     results = getting_data_from_db(embeded_query=embeded_query, text_query = user_query, rrf = rrf, top_k= top_k)
     return results
-    con.log("retrieved results, now sending them to ai")
-    # sending_to_ai(results, user_query)
 
 def reciprocal_rank_fusion(bm25_results, vector_results, k=60):
     rrf_scores = {}
